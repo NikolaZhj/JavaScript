@@ -1,0 +1,2002 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数字飞花令</title>
+    <style>
+        :root {
+            --bg: #0a0a0a;
+            --panel-bg: #1a1a2e;
+            --gold: #d4a574;
+            --gold-light: #f0d6b8;
+            --red: #c0392b;
+            --red-light: #e74c3c;
+            --text: #e0d5c1;
+            --text-dim: #8a8070;
+            --input-bg: #2a2a3e;
+            --border: #3a3a4e;
+            --success: #27ae60;
+            --danger: #c0392b;
+            --player1: #e74c3c;
+            --player2: #3498db;
+            --ai: #9b59b6;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'STSong', 'SimSun', 'Noto Serif SC', 'KaiTi', '楷体', '华文楷体', serif;
+            background: var(--bg);
+            background-image:
+                radial-gradient(ellipse at 50% 0%, rgba(212, 167, 116, 0.06) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 100%, rgba(192, 57, 43, 0.04) 0%, transparent 60%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: var(--text);
+            overflow-x: hidden;
+            user-select: none;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 700px;
+            padding: 20px;
+        }
+
+        /* 顶部标题 */
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            position: relative;
+        }
+
+        .title {
+            font-size: 3rem;
+            font-weight: bold;
+            color: var(--gold);
+            letter-spacing: 8px;
+            text-shadow: 0 0 40px rgba(212, 167, 116, 0.3), 0 2px 4px rgba(0, 0, 0, 0.5);
+            margin-bottom: 4px;
+        }
+
+        .subtitle {
+            font-size: 1rem;
+            color: var(--text-dim);
+            letter-spacing: 4px;
+        }
+
+        .decoration-line {
+            width: 100px;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--gold), transparent);
+            margin: 15px auto;
+        }
+
+        /* 主面板 */
+        .main-panel {
+            background: var(--panel-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .main-panel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(212, 167, 116, 0.4), transparent);
+        }
+
+        /* 游戏模式选择 */
+        .mode-select {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-bottom: 25px;
+        }
+
+        .mode-btn {
+            padding: 10px 24px;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text-dim);
+            border-radius: 25px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 1rem;
+            transition: all 0.3s;
+            letter-spacing: 2px;
+        }
+
+        .mode-btn:hover {
+            border-color: var(--gold);
+            color: var(--gold-light);
+        }
+
+        .mode-btn.active {
+            background: rgba(212, 167, 116, 0.15);
+            border-color: var(--gold);
+            color: var(--gold);
+        }
+
+        /* 数字展示区 */
+        .number-display {
+            text-align: center;
+            margin: 20px 0 30px;
+        }
+
+        .number-label {
+            font-size: 0.9rem;
+            color: var(--text-dim);
+            letter-spacing: 3px;
+            margin-bottom: 8px;
+        }
+
+        .number-char {
+            font-size: 6rem;
+            font-weight: bold;
+            color: var(--gold);
+            text-shadow: 0 0 60px rgba(212, 167, 116, 0.4), 0 4px 8px rgba(0, 0, 0, 0.5);
+            line-height: 1;
+            animation: numberPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes numberPulse {
+            0%,
+            100% {
+                text-shadow: 0 0 60px rgba(212, 167, 116, 0.4), 0 4px 8px rgba(0, 0, 0, 0.5);
+            }
+            50% {
+                text-shadow: 0 0 80px rgba(212, 167, 116, 0.7), 0 4px 12px rgba(0, 0, 0, 0.6);
+            }
+        }
+
+        /* 比分 */
+        .scoreboard {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 25px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+        }
+
+        .score-col {
+            text-align: center;
+            flex: 1;
+        }
+
+        .score-name {
+            font-size: 0.85rem;
+            color: var(--text-dim);
+            letter-spacing: 2px;
+            margin-bottom: 4px;
+        }
+
+        .score-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--gold-light);
+        }
+
+        .score-divider {
+            font-size: 1.5rem;
+            color: var(--text-dim);
+            font-weight: bold;
+        }
+
+        .score-col.player1 .score-value {
+            color: var(--player1);
+        }
+        .score-col.player2 .score-value {
+            color: var(--player2);
+        }
+        .score-col.ai .score-value {
+            color: var(--ai);
+        }
+
+        /* 回合提示 */
+        .turn-indicator {
+            text-align: center;
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 8px;
+            letter-spacing: 2px;
+        }
+
+        .turn-indicator.player1-turn {
+            color: var(--player1);
+            background: rgba(231, 76, 60, 0.08);
+        }
+        .turn-indicator.player2-turn {
+            color: var(--player2);
+            background: rgba(52, 152, 219, 0.08);
+        }
+
+        /* 输入区 */
+        .input-area {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .input-area input {
+            flex: 1;
+            padding: 14px 20px;
+            border: 1px solid var(--border);
+            border-radius: 25px;
+            background: var(--input-bg);
+            color: var(--text);
+            font-family: inherit;
+            font-size: 1.1rem;
+            letter-spacing: 2px;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        .input-area input:focus {
+            border-color: var(--gold);
+            box-shadow: 0 0 20px rgba(212, 167, 116, 0.1);
+        }
+
+        .input-area input::placeholder {
+            color: #5a5a6e;
+            letter-spacing: 1px;
+        }
+
+        .btn {
+            padding: 14px 28px;
+            border: 1px solid var(--gold);
+            border-radius: 25px;
+            background: rgba(212, 167, 116, 0.1);
+            color: var(--gold);
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 1rem;
+            letter-spacing: 2px;
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+
+        .btn:hover {
+            background: rgba(212, 167, 116, 0.2);
+            box-shadow: 0 0 20px rgba(212, 167, 116, 0.2);
+        }
+
+        .btn:active {
+            transform: scale(0.96);
+        }
+
+        .btn.primary {
+            background: var(--gold);
+            color: #1a1a2e;
+            border-color: var(--gold);
+            font-weight: bold;
+        }
+
+        .btn.primary:hover {
+            background: var(--gold-light);
+            box-shadow: 0 0 30px rgba(212, 167, 116, 0.4);
+        }
+
+        .btn.danger {
+            border-color: var(--red);
+            color: var(--red-light);
+            background: rgba(231, 76, 60, 0.1);
+        }
+
+        .btn.danger:hover {
+            background: rgba(231, 76, 60, 0.2);
+        }
+
+        /* 计时器 */
+        .timer {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .timer-bar {
+            height: 4px;
+            background: var(--border);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-bottom: 5px;
+        }
+
+        .timer-fill {
+            height: 100%;
+            background: var(--gold);
+            border-radius: 2px;
+            transition: width 1s linear;
+        }
+
+        .timer-fill.urgent {
+            background: var(--red);
+            animation: timerBlink 0.5s infinite;
+        }
+
+        @keyframes timerBlink {
+            50% {
+                opacity: 0.4;
+            }
+        }
+
+        .timer-text {
+            font-size: 0.85rem;
+            color: var(--text-dim);
+            letter-spacing: 2px;
+        }
+
+        .timer-text.urgent {
+            color: var(--red-light);
+        }
+
+        /* 已用词汇 */
+        .used-section {
+            margin-top: 15px;
+        }
+
+        .used-label {
+            font-size: 0.85rem;
+            color: var(--text-dim);
+            letter-spacing: 2px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .used-label:hover {
+            color: var(--gold-light);
+        }
+
+        .used-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            max-height: 120px;
+            overflow-y: auto;
+            padding: 5px 0;
+        }
+
+        .used-list::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .used-list::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 2px;
+        }
+
+        .used-tag {
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 0.85rem;
+            letter-spacing: 1px;
+            animation: fadeInTag 0.3s ease;
+        }
+
+        .used-tag.p1 {
+            background: rgba(231, 76, 60, 0.15);
+            color: var(--player1);
+            border: 1px solid rgba(231, 76, 60, 0.3);
+        }
+
+        .used-tag.p2 {
+            background: rgba(52, 152, 219, 0.15);
+            color: var(--player2);
+            border: 1px solid rgba(52, 152, 219, 0.3);
+        }
+
+        .used-tag.ai {
+            background: rgba(155, 89, 182, 0.15);
+            color: var(--ai);
+            border: 1px solid rgba(155, 89, 182, 0.3);
+        }
+
+        @keyframes fadeInTag {
+            from {
+                opacity: 0;
+                transform: translateY(-5px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* 消息提示 */
+        .message {
+            text-align: center;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            letter-spacing: 2px;
+            animation: fadeInTag 0.3s ease;
+        }
+
+        .message.error {
+            color: var(--red-light);
+            background: rgba(231, 76, 60, 0.1);
+        }
+        .message.success {
+            color: var(--success);
+            background: rgba(39, 174, 96, 0.1);
+        }
+        .message.info {
+            color: var(--gold-light);
+            background: rgba(212, 167, 116, 0.1);
+        }
+
+        /* 结果弹窗 */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        .modal {
+            background: var(--panel-bg);
+            border: 1px solid var(--gold);
+            border-radius: 16px;
+            padding: 40px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
+            max-width: 420px;
+            width: 90%;
+        }
+
+        .modal .winner-text {
+            font-size: 2rem;
+            color: var(--gold);
+            font-weight: bold;
+            letter-spacing: 4px;
+            margin-bottom: 10px;
+        }
+
+        .modal .winner-detail {
+            font-size: 1rem;
+            color: var(--text-dim);
+            letter-spacing: 2px;
+            margin-bottom: 20px;
+        }
+
+        .modal .btn {
+            margin: 5px;
+        }
+
+        /* 响应式 */
+        @media (max-width: 500px) {
+            .title {
+                font-size: 2.2rem;
+                letter-spacing: 4px;
+            }
+            .number-char {
+                font-size: 4rem;
+            }
+            .main-panel {
+                padding: 20px 15px;
+            }
+            .input-area {
+                flex-direction: column;
+            }
+            .btn {
+                width: 100%;
+                text-align: center;
+            }
+            .scoreboard {
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- 标题 -->
+        <div class="header">
+            <div class="title">数字飞花令</div>
+            <div class="decoration-line"></div>
+            <div class="subtitle">以数为令 · 飞花传诗</div>
+        </div>
+
+        <!-- 主面板 -->
+        <div class="main-panel" id="mainPanel">
+            <!-- 模式选择 -->
+            <div class="mode-select" id="modeSelect">
+                <button class="mode-btn active" data-mode="ai">🤖 人机对战</button>
+                <button class="mode-btn" data-mode="pvp">👥 双人对战</button>
+            </div>
+
+            <!-- 数字展示 -->
+            <div class="number-display">
+                <div class="number-label">本 轮 令 数</div>
+                <div class="number-char" id="numberChar">一</div>
+            </div>
+
+            <!-- 比分 -->
+            <div class="scoreboard">
+                <div class="score-col player1" id="scoreCol1">
+                    <div class="score-name" id="scoreName1">🟡 玩家</div>
+                    <div class="score-value" id="scoreVal1">0</div>
+                </div>
+                <div class="score-divider">:</div>
+                <div class="score-col" id="scoreCol2">
+                    <div class="score-name" id="scoreName2">对手</div>
+                    <div class="score-value" id="scoreVal2">0</div>
+                </div>
+            </div>
+
+            <!-- 回合指示 -->
+            <div class="turn-indicator" id="turnIndicator">玩家回合 — 请输入含 "<span id="turnNum">一</span>" 的成语或诗句</div>
+
+            <!-- 计时器 -->
+            <div class="timer">
+                <div class="timer-bar"><div class="timer-fill" id="timerFill" style="width:100%"></div></div>
+                <div class="timer-text" id="timerText">剩余 20 秒</div>
+            </div>
+
+            <!-- 输入区 -->
+            <div class="input-area">
+                <input type="text" id="wordInput" placeholder="输入成语或诗句..." maxlength="20" autocomplete="off">
+                <button class="btn primary" id="btnSubmit">提交</button>
+                <button class="btn" id="btnPass" style="display:none;">跳过</button>
+            </div>
+
+            <!-- 消息 -->
+            <div class="message" id="message" style="display:none;"></div>
+
+            <!-- 已用词汇 -->
+            <div class="used-section" id="usedSection">
+                <div class="used-label" id="usedToggle">📜 已用词汇 <span id="usedCount">(0)</span></div>
+                <div class="used-list" id="usedList"></div>
+            </div>
+
+            <!-- 控制按钮 -->
+            <div style="text-align:center; margin-top:20px;">
+                <button class="btn danger" id="btnReset">🔄 重新开始</button>
+                <button class="btn" id="btnNewNumber">🎲 换一个数</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 结果弹窗 (隐藏) -->
+    <div class="modal-overlay" id="modalOverlay" style="display:none;">
+        <div class="modal">
+            <div class="winner-text" id="modalWinner"></div>
+            <div class="winner-detail" id="modalDetail"></div>
+            <button class="btn primary" id="btnPlayAgain">再来一局</button>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            // ===== 成语数据库 =====
+            // 含有数字的成语库 (成语, 包含的数字)
+            const idiomDB = [
+                // 一
+                ['一心一意', '一'],
+                ['一帆风顺', '一'],
+                ['一鸣惊人', '一'],
+                ['一马当先', '一'],
+                ['一箭双雕', '一'],
+                ['一举两得', '一'],
+                ['一落千丈', '一'],
+                ['一诺千金', '一'],
+                ['一目了然', '一'],
+                ['一毛不拔', '一'],
+                ['一尘不染', '一'],
+                ['一成不变', '一'],
+                ['一刀两断', '一'],
+                ['一分为二', '一'],
+                ['一见如故', '一'],
+                ['一呼百应', '一'],
+                ['一败涂地', '一'],
+                ['一本万利', '一'],
+                ['一表人才', '一'],
+                ['一波三折', '一'],
+                ['一唱一和', '一'],
+                ['一朝一夕', '一'],
+                ['一触即发', '一'],
+                ['一蹴而就', '一'],
+                ['一石二鸟', '一'],
+                ['一视同仁', '一'],
+                ['一丝不苟', '一'],
+                ['一团和气', '一'],
+                ['一往无前', '一'],
+                ['一望无际', '一'],
+                ['一言九鼎', '一'],
+                ['一叶知秋', '一'],
+                ['一针见血', '一'],
+                ['一知半解', '一'],
+                ['一纸空文', '一'],
+                ['一字千金', '一'],
+                ['一臂之力', '一'],
+                ['一表非凡', '一'],
+                ['一步登天', '一'],
+                ['一草一木', '一'],
+                ['一差二错', '一'],
+                ['一场春梦', '一'],
+                ['一倡百和', '一'],
+                ['一尘不到', '一'],
+                ['一成不易', '一'],
+                ['一筹莫展', '一'],
+                ['一触即溃', '一'],
+                ['一代楷模', '一'],
+                ['一刀两段', '一'],
+                ['一点一滴', '一'],
+                ['一定之规', '一'],
+                ['一发千钧', '一'],
+                ['一帆顺风', '一'],
+                ['一反常态', '一'],
+                ['一饭千金', '一'],
+                ['一飞冲天', '一'],
+                ['一概而论', '一'],
+                ['一干二净', '一'],
+                ['一鼓作气', '一'],
+                ['一官半职', '一'],
+                ['一寒如此', '一'],
+                ['一哄而散', '一'],
+                ['一挥而就', '一'],
+                ['一技之长', '一'],
+                ['一家之言', '一'],
+                ['一见钟情', '一'],
+                ['一举成名', '一'],
+                ['一决雌雄', '一'],
+                ['一刻千金', '一'],
+                ['一孔之见', '一'],
+                ['一览无余', '一'],
+                ['一劳永逸', '一'],
+                ['一了百了', '一'],
+                ['一鳞半爪', '一'],
+                ['一路平安', '一'],
+                ['一路顺风', '一'],
+                ['一马平川', '一'],
+                ['一脉相承', '一'],
+                ['一面之词', '一'],
+                ['一面之交', '一'],
+                ['一鸣惊人', '一'],
+                ['一命呜呼', '一'],
+                ['一模一样', '一'],
+                ['一目十行', '一'],
+                ['一年半载', '一'],
+                ['一念之差', '一'],
+                ['一牛九锁', '一'],
+                ['一拍即合', '一'],
+                ['一盘散沙', '一'],
+                ['一片冰心', '一'],
+                ['一贫如洗', '一'],
+                ['一气呵成', '一'],
+                ['一钱不值', '一'],
+                ['一窍不通', '一'],
+                ['一切众生', '一'],
+                ['一清二白', '一'],
+                ['一穷二白', '一'],
+                ['一日三秋', '一'],
+                ['一日千里', '一'],
+                ['一如既往', '一'],
+                ['一扫而光', '一'],
+                ['一身是胆', '一'],
+                ['一失足成千古恨', '一'],
+                ['一事无成', '一'],
+                ['一世之雄', '一'],
+                ['一手包办', '一'],
+                ['一手遮天', '一'],
+                ['一丝一毫', '一'],
+                ['一塌糊涂', '一'],
+                ['一潭死水', '一'],
+                ['一体同心', '一'],
+                ['一天星斗', '一'],
+                ['一通百通', '一'],
+                ['一统天下', '一'],
+                ['一网打尽', '一'],
+                ['一笑千金', '一'],
+                ['一心一德', '一'],
+                ['一言半语', '一'],
+                ['一言难尽', '一'],
+                ['一叶障目', '一'],
+                ['一衣带水', '一'],
+                ['一意孤行', '一'],
+                ['一语道破', '一'],
+                ['一语破的', '一'],
+                ['一张一弛', '一'],
+                ['一枕黄粱', '一'],
+                ['一知半见', '一'],
+                ['一柱擎天', '一'],
+                ['一字褒贬', '一'],
+                ['一字一珠', '一'],
+                ['一走了之', '一'],
+                // 二
+                ['二话不说', '二'],
+                ['二龙戏珠', '二'],
+                ['二者必居其一', '二'],
+                ['二心两意', '二'],
+                ['二八佳人', '二'],
+                ['二分明月', '二'],
+                ['二满三平', '二'],
+                ['二人同心', '二'],
+                ['二三其德', '二'],
+                ['二竖为虐', '二'],
+                ['二桃杀三士', '二'],
+                ['二姓之好', '二'],
+                ['二旬九食', '二'],
+                ['独一无二', '二'],
+                ['一石二鸟', '二'],
+                ['一清二白', '二'],
+                ['一穷二白', '二'],
+                ['一干二净', '二'],
+                ['三心二意', '二'],
+                ['接二连三', '二'],
+                ['说一不二', '二'],
+                ['数一数二', '二'],
+                ['百二关河', '二'],
+                ['百二金瓯', '二'],
+                ['百二山河', '二'],
+                ['不二法门', '二'],
+                ['丁一卯二', '二'],
+                ['独一无二', '二'],
+                ['分斤掰两', '二'],
+                ['合二为一', '二'],
+                ['器二不匮', '二'],
+                ['三占从二', '二'],
+                ['身无二任', '二'],
+                ['头一无二', '二'],
+                ['心不二用', '二'],
+                ['一差二误', '二'],
+                ['一长二短', '二'],
+                ['一分为二', '二'],
+                ['一来二去', '二'],
+                ['一清二楚', '二'],
+                ['一时无两', '二'],
+                ['一身二任', '二'],
+                ['一石两鸟', '二'],
+                ['矢无二诺', '二'],
+                ['事无二成', '二'],
+                ['书无二价', '二'],
+                ['心无二用', '二'],
+                ['天无二日', '二'],
+                ['言不二价', '二'],
+                // 三
+                ['三心二意', '三'],
+                ['三顾茅庐', '三'],
+                ['三生有幸', '三'],
+                ['三羊开泰', '三'],
+                ['三令五申', '三'],
+                ['三番五次', '三'],
+                ['三思而行', '三'],
+                ['三头六臂', '三'],
+                ['三言两语', '三'],
+                ['三长两短', '三'],
+                ['三人成虎', '三'],
+                ['三教九流', '三'],
+                ['三缄其口', '三'],
+                ['三足鼎立', '三'],
+                ['三番四复', '三'],
+                ['三坟五典', '三'],
+                ['三风五气', '三'],
+                ['三宫六院', '三'],
+                ['三魂七魄', '三'],
+                ['三皇五帝', '三'],
+                ['三江五湖', '三'],
+                ['三街六巷', '三'],
+                ['三老五更', '三'],
+                ['三令五申', '三'],
+                ['三六九等', '三'],
+                ['三马同槽', '三'],
+                ['三朋四友', '三'],
+                ['三亲六故', '三'],
+                ['三清四白', '三'],
+                ['三求四告', '三'],
+                ['三拳两脚', '三'],
+                ['三人为众', '三'],
+                ['三山五岳', '三'],
+                ['三生三世', '三'],
+                ['三十而立', '三'],
+                ['三豕涉河', '三'],
+                ['三首六臂', '三'],
+                ['三汤两割', '三'],
+                ['三天两头', '三'],
+                ['三瓦两舍', '三'],
+                ['三位一体', '三'],
+                ['三无坐处', '三'],
+                ['三五成群', '三'],
+                ['三下五除二', '三'],
+                ['三心一意', '三'],
+                ['三衅三沐', '三'],
+                ['三言五语', '三'],
+                ['三阳开泰', '三'],
+                ['三揖三让', '三'],
+                ['三盈三虚', '三'],
+                ['三余读书', '三'],
+                ['三灾八难', '三'],
+                ['三占从二', '三'],
+                ['三战三北', '三'],
+                ['三折肱为良医', '三'],
+                ['三贞九烈', '三'],
+                ['三真六草', '三'],
+                ['三纸无驴', '三'],
+                ['三智五猜', '三'],
+                ['三座大山', '三'],
+                ['火冒三丈', '三'],
+                ['接二连三', '三'],
+                ['举一反三', '三'],
+                ['垂涎三尺', '三'],
+                ['入木三分', '三'],
+                ['韦编三绝', '三'],
+                ['约法三章', '三'],
+                ['狡兔三窟', '三'],
+                ['一日三秋', '三'],
+                ['朝三暮四', '三'],
+                ['低三下四', '三'],
+                ['推三阻四', '三'],
+                ['不三不四', '三'],
+                // 四
+                ['四面楚歌', '四'],
+                ['四海为家', '四'],
+                ['四平八稳', '四'],
+                ['四通八达', '四'],
+                ['四书五经', '四'],
+                ['四脚朝天', '四'],
+                ['四面八方', '四'],
+                ['四时充美', '四'],
+                ['四季如春', '四'],
+                ['四体不勤', '四'],
+                ['四海升平', '四'],
+                ['四海承风', '四'],
+                ['四姻九戚', '四'],
+                ['四通五达', '四'],
+                ['四停八当', '四'],
+                ['四体百骸', '四'],
+                ['四山五岳', '四'],
+                ['四清六活', '四'],
+                ['四起八拜', '四'],
+                ['四平八满', '四'],
+                ['四马攒蹄', '四'],
+                ['四邻八舍', '四'],
+                ['四离五散', '四'],
+                ['四角俱全', '四'],
+                ['四海一家', '四'],
+                ['四海他人', '四'],
+                ['四海飘零', '四'],
+                ['四荒八极', '四'],
+                ['四行八作', '四'],
+                ['四海波静', '四'],
+                ['四顾不皇', '四'],
+                ['四方之志', '四'],
+                ['四分五剖', '四'],
+                ['四纷五落', '四'],
+                ['四方八面', '四'],
+                ['四冲八达', '四'],
+                ['四冲六达', '四'],
+                ['四不拗六', '四'],
+                ['四壁萧然', '四'],
+                ['四拜之交', '四'],
+                ['四战之地', '四'],
+                ['四远驰名', '四'],
+                ['四大皆空', '四'],
+                ['说三道四', '四'],
+                ['朝三暮四', '四'],
+                ['颠三倒四', '四'],
+                ['不三不四', '四'],
+                ['丢三落四', '四'],
+                ['挑三拣四', '四'],
+                ['张三李四', '四'],
+                ['再三再四', '四'],
+                ['半三不四', '四'],
+                ['差三错四', '四'],
+                ['倒三颠四', '四'],
+                ['横三竖四', '四'],
+                ['横三顺四', '四'],
+                ['接三连四', '四'],
+                ['拉三扯四', '四'],
+                ['连三接四', '四'],
+                ['没三没四', '四'],
+                ['偏三向四', '四'],
+                ['欺三瞒四', '四'],
+                ['三朋四友', '四'],
+                ['三清四白', '四'],
+                ['三求四告', '四'],
+                ['调三惑四', '四'],
+                ['调三窝四', '四'],
+                ['推三推四', '四'],
+                ['推三阻四', '四'],
+                ['言三语四', '四'],
+                ['幺三喝四', '四'],
+                ['再三再四', '四'],
+                ['张四李四', '四'],
+                ['遮三瞒四', '四'],
+                ['重三迭四', '四'],
+                ['重三叠四', '四'],
+                // 五
+                ['五光十色', '五'],
+                ['五湖四海', '五'],
+                ['五颜六色', '五'],
+                ['五花八门', '五'],
+                ['五体投地', '五'],
+                ['五谷丰登', '五'],
+                ['五雷轰顶', '五'],
+                ['五马分尸', '五'],
+                ['五内如焚', '五'],
+                ['五色缤纷', '五'],
+                ['五十步笑百步', '五'],
+                ['五世其昌', '五'],
+                ['五体投地', '五'],
+                ['五心六意', '五'],
+                ['五行八作', '五'],
+                ['五行并下', '五'],
+                ['五虚六耗', '五'],
+                ['五颜六色', '五'],
+                ['五音六律', '五'],
+                ['五月飞霜', '五'],
+                ['五月披裘', '五'],
+                ['五蕴皆空', '五'],
+                ['五脏六腑', '五'],
+                ['五洲四海', '五'],
+                ['五子登科', '五'],
+                ['五尺竖子', '五'],
+                ['五尺童子', '五'],
+                ['五车腹笥', '五'],
+                ['五彩缤纷', '五'],
+                ['五大三粗', '五'],
+                ['五典三坟', '五'],
+                ['五冬六夏', '五'],
+                ['五斗折腰', '五'],
+                ['五毒俱全', '五'],
+                ['五短身材', '五'],
+                ['五方杂处', '五'],
+                ['五风十雨', '五'],
+                ['五更三点', '五'],
+                ['五羖大夫', '五'],
+                ['五合六聚', '五'],
+                ['五花大绑', '五'],
+                ['五花杀马', '五'],
+                ['五黄六月', '五'],
+                ['五脊六兽', '五'],
+                ['五角六张', '五'],
+                ['五经扫地', '五'],
+                ['五劳七伤', '五'],
+                ['五里雾中', '五'],
+                ['五陵年少', '五'],
+                ['五零二落', '五'],
+                ['五零四散', '五'],
+                ['五马渡江', '五'],
+                ['五抢六夺', '五'],
+                ['五亲六眷', '五'],
+                ['五雀六燕', '五'],
+                ['五日京兆', '五'],
+                ['五色无主', '五'],
+                ['五申三令', '五'],
+                ['五石六鹢', '五'],
+                ['五体投诚', '五'],
+                ['五味俱全', '五'],
+                ['五言长城', '五'],
+                ['三令五申', '五'],
+                ['三五成群', '五'],
+                ['四分五裂', '五'],
+                ['四书五经', '五'],
+                ['学富五车', '五'],
+                ['目迷五色', '五'],
+                ['五颜六色', '五'],
+                ['十围五攻', '五'],
+                ['十光五色', '五'],
+                ['三皇五帝', '五'],
+                ['三山五岳', '五'],
+                ['三番五次', '五'],
+                ['三令五申', '五'],
+                ['三智五猜', '五'],
+                ['三坟五典', '五'],
+                ['三风五气', '五'],
+                ['三江五湖', '五'],
+                // 六
+                ['六神无主', '六'],
+                ['六亲不认', '六'],
+                ['六根清净', '六'],
+                ['六畜兴旺', '六'],
+                ['六道轮回', '六'],
+                ['六尺之孤', '六'],
+                ['六出奇计', '六'],
+                ['六道轮回', '六'],
+                ['六根清净', '六'],
+                ['六宫粉黛', '六'],
+                ['六合之内', '六'],
+                ['六街三市', '六'],
+                ['六马仰秣', '六'],
+                ['六亲不和', '六'],
+                ['六亲同运', '六'],
+                ['六情不认', '六'],
+                ['六曲连环', '六'],
+                ['六神不安', '六'],
+                ['六神无主', '六'],
+                ['六韬三略', '六'],
+                ['六通四达', '六'],
+                ['六通四辟', '六'],
+                ['六问三推', '六'],
+                ['六阳会首', '六'],
+                ['六神颠到', '六'],
+                ['六街三陌', '六'],
+                ['六根不净', '六'],
+                ['六出纷飞', '六'],
+                ['六臂三头', '六'],
+                ['三头六臂', '六'],
+                ['五颜六色', '六'],
+                ['三宫六院', '六'],
+                ['五脏六腑', '六'],
+                ['七情六欲', '六'],
+                ['三街六巷', '六'],
+                ['三亲六故', '六'],
+                ['五脊六兽', '六'],
+                ['五雀六燕', '六'],
+                ['四清六活', '六'],
+                ['四不拗六', '六'],
+                ['五角六张', '六'],
+                ['五合六聚', '六'],
+                ['三真六草', '六'],
+                ['五心六意', '六'],
+                ['五虚六耗', '六'],
+                ['五音六律', '六'],
+                ['五抢六夺', '六'],
+                ['五亲六眷', '六'],
+                ['五石六鹢', '六'],
+                ['四冲六达', '六'],
+                ['三首六臂', '六'],
+                // 七
+                ['七上八下', '七'],
+                ['七嘴八舌', '七'],
+                ['七手八脚', '七'],
+                ['七拼八凑', '七'],
+                ['七窍生烟', '七'],
+                ['七零八落', '七'],
+                ['七情六欲', '七'],
+                ['七步成章', '七'],
+                ['七长八短', '七'],
+                ['七尺之躯', '七'],
+                ['七穿八洞', '七'],
+                ['七疮八孔', '七'],
+                ['七搭八扯', '七'],
+                ['七大八小', '七'],
+                ['七担八挪', '七'],
+                ['七颠八倒', '七'],
+                ['七洞八孔', '七'],
+                ['七断八续', '七'],
+                ['七横八竖', '七'],
+                ['七横八纵', '七'],
+                ['七慌八乱', '七'],
+                ['七角八角', '七'],
+                ['七开八闭', '七'],
+                ['七口八嘴', '七'],
+                ['七拉八扯', '七'],
+                ['七老八倒', '七'],
+                ['七棱八瓣', '七'],
+                ['七零八散', '七'],
+                ['七零八碎', '七'],
+                ['七满八平', '七'],
+                ['七男八婿', '七'],
+                ['七扭八歪', '七'],
+                ['七七八八', '七'],
+                ['七青八黄', '七'],
+                ['七舌八嘴', '七'],
+                ['七死八活', '七'],
+                ['七损八益', '七'],
+                ['七通八达', '七'],
+                ['七歪八扭', '七'],
+                ['七弯八拐', '七'],
+                ['七行俱下', '七'],
+                ['七言八语', '七'],
+                ['七张八嘴', '七'],
+                ['七折八扣', '七'],
+                ['七贞九烈', '七'],
+                ['七嘴八张', '七'],
+                ['七足八手', '七'],
+                ['横七竖八', '七'],
+                ['杂七杂八', '七'],
+                ['夹七夹八', '七'],
+                ['零七八碎', '七'],
+                ['歪七扭八', '七'],
+                ['污七八糟', '七'],
+                ['乌七八糟', '七'],
+                ['五劳七伤', '七'],
+                ['乱七八糟', '七'],
+                // 八
+                ['八仙过海', '八'],
+                ['八面玲珑', '八'],
+                ['八拜之交', '八'],
+                ['八斗之才', '八'],
+                ['八方支援', '八'],
+                ['八面威风', '八'],
+                ['八音迭奏', '八'],
+                ['八窗玲珑', '八'],
+                ['八达通衢', '八'],
+                ['八方风雨', '八'],
+                ['八府巡按', '八'],
+                ['八公山上', '八'],
+                ['八花九裂', '八'],
+                ['八荒之外', '八'],
+                ['八街九陌', '八'],
+                ['八九不离十', '八'],
+                ['八面见光', '八'],
+                ['八面莹澈', '八'],
+                ['八面圆通', '八'],
+                ['八难三灾', '八'],
+                ['八旗子弟', '八'],
+                ['八索九丘', '八'],
+                ['八万四千', '八'],
+                ['八仙过海各显神通', '八'],
+                ['八音遏密', '八'],
+                ['八珍玉食', '八'],
+                ['八砖学士', '八'],
+                ['八字打开', '八'],
+                ['八字没一撇', '八'],
+                ['乱七八糟', '八'],
+                ['七上八下', '八'],
+                ['四平八稳', '八'],
+                ['四通八达', '八'],
+                ['五花八门', '八'],
+                ['横七竖八', '八'],
+                ['杂七杂八', '八'],
+                ['半斤八两', '八'],
+                ['耳听八方', '八'],
+                ['眼观六路耳听八方', '八'],
+                ['正经八百', '八'],
+                ['三灾八难', '八'],
+                ['四停八当', '八'],
+                ['四通八达', '八'],
+                ['四平八满', '八'],
+                ['四荒八极', '八'],
+                ['四行八作', '八'],
+                ['四起八拜', '八'],
+                ['七死八活', '八'],
+                ['七嘴八舌', '八'],
+                ['七手八脚', '八'],
+                ['七零八落', '八'],
+                // 九
+                ['九牛一毛', '九'],
+                ['九死一生', '九'],
+                ['九霄云外', '九'],
+                ['九曲回肠', '九'],
+                ['九鼎大吕', '九'],
+                ['九九归一', '九'],
+                ['九流人物', '九'],
+                ['九流百家', '九'],
+                ['九流三教', '九'],
+                ['九流十家', '九'],
+                ['九龙戏珠', '九'],
+                ['九门提督', '九'],
+                ['九命奇冤', '九'],
+                ['九牛二虎之力', '九'],
+                ['九牛拉不转', '九'],
+                ['九牛之一毛', '九'],
+                ['九品中正', '九'],
+                ['九泉之下', '九'],
+                ['九仞一篑', '九'],
+                ['九儒十丐', '九'],
+                ['九世之仇', '九'],
+                ['九死不悔', '九'],
+                ['九死未悔', '九'],
+                ['九死余身', '九'],
+                ['九天揽月', '九'],
+                ['九头八尾', '九'],
+                ['九尾狐仙', '九'],
+                ['九五之尊', '九'],
+                ['九霄云路', '九'],
+                ['九行八业', '九'],
+                ['九朽一罢', '九'],
+                ['九旋之渊', '九'],
+                ['九原可作', '九'],
+                ['九蒸三熯', '九'],
+                ['九转功成', '九'],
+                ['九转金丹', '九'],
+                ['九宗七祖', '九'],
+                ['一言九鼎', '九'],
+                ['三教九流', '九'],
+                ['九牛一毛', '九'],
+                ['十拿九稳', '九'],
+                ['三贞九烈', '九'],
+                ['四姻九戚', '九'],
+                ['八花九裂', '九'],
+                ['八街九陌', '九'],
+                ['八索九丘', '九'],
+                ['七贞九烈', '九'],
+                ['二旬九食', '九'],
+                ['一牛九锁', '九'],
+                ['含笑九泉', '九'],
+                ['龙生九子', '九'],
+                ['数九寒天', '九'],
+                // 十
+                ['十全十美', '十'],
+                ['十拿九稳', '十'],
+                ['十万火急', '十'],
+                ['十年寒窗', '十'],
+                ['十指连心', '十'],
+                ['十字路口', '十'],
+                ['十恶不赦', '十'],
+                ['十行俱下', '十'],
+                ['十步芳草', '十'],
+                ['十步香车', '十'],
+                ['十步之内必有芳草', '十'],
+                ['十成九稳', '十'],
+                ['十荡十决', '十'],
+                ['十冬腊月', '十'],
+                ['十风五雨', '十'],
+                ['十夫桡椎', '十'],
+                ['十夫之椎', '十'],
+                ['十光五色', '十'],
+                ['十寒一暴', '十'],
+                ['十里长亭', '十'],
+                ['十里洋场', '十'],
+                ['十年窗下', '十'],
+                ['十亲九故', '十'],
+                ['十清九浊', '十'],
+                ['十全大补', '十'],
+                ['十人九慕', '十'],
+                ['十人九痔', '十'],
+                ['十日并出', '十'],
+                ['十日之饮', '十'],
+                ['十生九死', '十'],
+                ['十室九空', '十'],
+                ['十鼠同穴', '十'],
+                ['十死九活', '十'],
+                ['十死一生', '十'],
+                ['十万八千里', '十'],
+                ['十围五攻', '十'],
+                ['十羊九牧', '十'],
+                ['十指不沾泥', '十'],
+                ['十指纤纤', '十'],
+                ['十转九空', '十'],
+                ['十捉九着', '十'],
+                ['五光十色', '十'],
+                ['一目十行', '十'],
+                ['一曝十寒', '十'],
+                ['闻一知十', '十'],
+                ['以一当十', '十'],
+                ['九流十家', '九'],
+                ['九儒十丐', '十'],
+                ['三十六计走为上计', '十'],
+                ['三十而立', '十'],
+                // 百
+                ['百发百中', '百'],
+                ['百步穿杨', '百'],
+                ['百年好合', '百'],
+                ['百花齐放', '百'],
+                ['百折不挠', '百'],
+                ['百闻不如一见', '百'],
+                ['百里挑一', '百'],
+                ['百战百胜', '百'],
+                ['百川归海', '百'],
+                ['百代过客', '百'],
+                ['百代文宗', '百'],
+                ['百读不厌', '百'],
+                ['百端待举', '百'],
+                ['百二关河', '百'],
+                ['百二山河', '百'],
+                ['百发百中', '百'],
+                ['百废待兴', '百'],
+                ['百废俱兴', '百'],
+                ['百感交集', '百'],
+                ['百花生日', '百'],
+                ['百花争妍', '百'],
+                ['百花争艳', '百'],
+                ['百喙莫辩', '百'],
+                ['百喙一词', '百'],
+                ['百计千方', '百'],
+                ['百家争鸣', '百'],
+                ['百口莫辩', '百'],
+                ['百口难分', '百'],
+                ['百里风趠', '百'],
+                ['百里之才', '百'],
+                ['百炼成钢', '百'],
+                ['百炼千锤', '百'],
+                ['百伶百俐', '百'],
+                ['百龄眉寿', '百'],
+                ['百龙之智', '百'],
+                ['百虑一致', '百'],
+                ['百媚千娇', '百'],
+                ['百年不遇', '百'],
+                ['百年大计', '百'],
+                ['百年难遇', '百'],
+                ['百年树人', '百'],
+                ['百年偕老', '百'],
+                ['百年之好', '百'],
+                ['百年之后', '百'],
+                ['百巧千穷', '百'],
+                ['百忍成金', '百'],
+                ['百舌之声', '百'],
+                ['百舍重茧', '百'],
+                ['百身莫赎', '百'],
+                ['百世不易', '百'],
+                ['百世流芳', '百'],
+                ['百世师表', '百'],
+                ['百世之利', '百'],
+                ['百事大吉', '百'],
+                ['百思不解', '百'],
+                ['百岁之好', '百'],
+                ['百岁之后', '百'],
+                ['百万雄师', '百'],
+                ['百无禁忌', '百'],
+                ['百无聊赖', '百'],
+                ['百无一能', '百'],
+                ['百无一失', '百'],
+                ['百无一是', '百'],
+                ['百无一用', '百'],
+                ['百星不如一月', '百'],
+                ['百业萧条', '百'],
+                ['百依百顺', '百'],
+                ['百战不殆', '百'],
+                ['百丈竿头', '百'],
+                ['百折不回', '百'],
+                ['百折千回', '百'],
+                ['百拙千丑', '百'],
+                ['百紫千红', '百'],
+                ['百纵千随', '百'],
+                ['百足之虫死而不僵', '百'],
+                ['一呼百应', '百'],
+                ['千锤百炼', '百'],
+                ['千奇百怪', '百'],
+                ['身经百战', '百'],
+                ['流芳百世', '百'],
+                ['杀一儆百', '百'],
+                ['惩一儆百', '百'],
+                ['漏洞百出', '百'],
+                ['丑态百出', '百'],
+                // 千
+                ['千军万马', '千'],
+                ['千变万化', '千'],
+                ['千丝万缕', '千'],
+                ['千言万语', '千'],
+                ['千山万水', '千'],
+                ['千辛万苦', '千'],
+                ['千锤百炼', '千'],
+                ['千方百计', '千'],
+                ['千钧一发', '千'],
+                ['千篇一律', '千'],
+                ['千家万户', '千'],
+                ['千载难逢', '千'],
+                ['千真万确', '千'],
+                ['千疮百孔', '千'],
+                ['千呼万唤', '千'],
+                ['千娇百媚', '千'],
+                ['千钧重负', '千'],
+                ['千里鹅毛', '千'],
+                ['千里莼羹', '千'],
+                ['千里同风', '千'],
+                ['千里之驹', '千'],
+                ['千里之行始于足下', '千'],
+                ['千里之足', '千'],
+                ['千了百当', '千'],
+                ['千伶百俐', '千'],
+                ['千门万户', '千'],
+                ['千难万难', '千'],
+                ['千年万载', '千'],
+                ['千奇百怪', '千'],
+                ['千秋万代', '千'],
+                ['千秋万岁', '千'],
+                ['千人所指', '千'],
+                ['千人一面', '千'],
+                ['千山万壑', '千'],
+                ['千生万死', '千'],
+                ['千乘万骑', '千'],
+                ['千水万山', '千'],
+                ['千丝万络', '千'],
+                ['千思万想', '千'],
+                ['千随百顺', '千'],
+                ['千岁一时', '千'],
+                ['千态万状', '千'],
+                ['千条万端', '千'],
+                ['千头万绪', '千'],
+                ['千推万阻', '千'],
+                ['千妥万当', '千'],
+                ['千万买邻', '千'],
+                ['千闻不如一见', '千'],
+                ['千辛万苦', '千'],
+                ['千绪万端', '千'],
+                ['千言万说', '千'],
+                ['千岩万壑', '千'],
+                ['千载一逢', '千'],
+                ['千载一合', '千'],
+                ['千载一会', '千'],
+                ['千载一圣', '千'],
+                ['千载一时', '千'],
+                ['千载一遇', '千'],
+                ['千章万句', '千'],
+                ['千真万真', '千'],
+                ['千枝万叶', '千'],
+                ['千状万态', '千'],
+                ['千姿万态', '千'],
+                ['一字千金', '千'],
+                ['一诺千金', '千'],
+                ['一刻千金', '千'],
+                ['十万八千里', '千'],
+                ['万水千山', '千'],
+                ['万紫千红', '千'],
+                ['各有千秋', '千'],
+                ['百孔千疮', '千'],
+                ['万里千山', '千'],
+                // 万
+                ['万众一心', '万'],
+                ['万紫千红', '万'],
+                ['万象更新', '万'],
+                ['万无一失', '万'],
+                ['万家灯火', '万'],
+                ['万马奔腾', '万'],
+                ['万里长城', '万'],
+                ['万寿无疆', '万'],
+                ['万事如意', '万'],
+                ['万水千山', '万'],
+                ['万里无云', '万'],
+                ['万全之策', '万'],
+                ['万不得已', '万'],
+                ['万古长青', '万'],
+                ['万贯家财', '万'],
+                ['万夫不当', '万'],
+                ['万籁俱寂', '万'],
+                ['万古流芳', '万'],
+                ['万壑千岩', '万'],
+                ['万壑争流', '万'],
+                ['万户千门', '万'],
+                ['万箭穿心', '万'],
+                ['万箭攒心', '万'],
+                ['万劫不复', '万'],
+                ['万口一谈', '万'],
+                ['万苦千辛', '万'],
+                ['万赖无声', '万'],
+                ['万籁无声', '万'],
+                ['万里鹏程', '万'],
+                ['万里鹏翅', '万'],
+                ['万流景仰', '万'],
+                ['万缕千丝', '万'],
+                ['万马齐喑', '万'],
+                ['万民涂炭', '万'],
+                ['万目睽睽', '万'],
+                ['万念俱灰', '万'],
+                ['万签插架', '万'],
+                ['万全之计', '万'],
+                ['万人空巷', '万'],
+                ['万世师表', '万'],
+                ['万世一时', '万'],
+                ['万世之安', '万'],
+                ['万事亨通', '万'],
+                ['万事俱备只欠东风', '万'],
+                ['万寿千秋', '万'],
+                ['万殊一辙', '万'],
+                ['万死一生', '万'],
+                ['万死不辞', '万'],
+                ['万死犹轻', '万'],
+                ['万岁千秋', '万'],
+                ['万头攒动', '万'],
+                ['万万千千', '万'],
+                ['万无一失', '万'],
+                ['万物之灵', '万'],
+                ['万象包罗', '万'],
+                ['万象森罗', '万'],
+                ['万绪千端', '万'],
+                ['万绪千头', '万'],
+                ['万选万中', '万'],
+                ['万应灵丹', '万'],
+                ['万有引力', '万'],
+                ['万语千言', '万'],
+                ['万载千秋', '万'],
+                ['万丈光芒', '万'],
+                ['万钟之藏', '万'],
+                ['万众睢睢', '万'],
+                ['万状千端', '万'],
+                ['千军万马', '万'],
+                ['千变万化', '万'],
+                ['千辛万苦', '万'],
+                ['千言万语', '万'],
+                ['千山万水', '万'],
+                ['千呼万唤', '万'],
+                ['成千上万', '万'],
+                ['一本万利', '万'],
+            ];
+
+            // 诗句数据库
+            const poemDB = [
+                ['一片冰心在玉壶', '一'],
+                ['一江春水向东流', '一'],
+                ['一行白鹭上青天', '一'],
+                ['一骑红尘妃子笑', '一'],
+                ['二月春风似剪刀', '二'],
+                ['霜叶红于二月花', '二'],
+                ['飞流直下三千尺', '三'],
+                ['三万里河东入海', '三'],
+                ['三千宠爱在一身', '三'],
+                ['白发三千丈缘愁似个长', '三'],
+                ['南朝四百八十寺', '四'],
+                ['毕竟西湖六月中', '六'],
+                ['七仙女下凡', '七'],
+                ['八千里路云和月', '八'],
+                ['九曲黄河万里沙', '九'],
+                ['九天阊阖开宫殿', '九'],
+                ['十年生死两茫茫', '十'],
+                ['十年一觉扬州梦', '十'],
+                ['将军百战死', '百'],
+                ['百花齐放春满园', '百'],
+                ['千山鸟飞绝', '千'],
+                ['千里江陵一日还', '千'],
+                ['千里莺啼绿映红', '千'],
+                ['千门万户曈曈日', '千'],
+                ['千树万树梨花开', '千'],
+                ['万里长征人未还', '万'],
+                ['万里悲秋常作客', '万'],
+                ['万里赴戎机', '万'],
+                ['长风万里送秋雁', '万'],
+                ['轻舟已过万重山', '万'],
+                ['桃花潭水深千尺', '千'],
+                ['疑是银河落九天', '九'],
+                ['门泊东吴万里船', '万'],
+                ['一行白鹭上青天', '一'],
+                ['一枝红杏出墙来', '一'],
+                ['一片孤城万仞山', '一'],
+                ['黄河远上白云间一片孤城万仞山', '一'],
+                ['两岸猿声啼不住', '两'],
+                ['两个黄鹂鸣翠柳', '两'],
+                ['二十四桥明月夜', '二'],
+                ['三山半落青天外', '三'],
+                ['城阙辅三秦', '三'],
+                ['四海无闲田', '四'],
+                ['五岳寻仙不辞远', '五'],
+                ['五花马千金裘', '五'],
+                ['六军不发无奈何', '六'],
+                ['七月七日长生殿', '七'],
+                ['八百里分麾下炙', '八'],
+                ['八声甘州', '八'],
+                ['九月寒砧催木叶', '九'],
+                ['十年磨一剑', '十'],
+                ['百尺竿头更进一步', '百'],
+                ['千磨万击还坚劲', '千'],
+                ['万里归船弄长笛', '万'],
+                ['千淘万漉虽辛苦', '千'],
+                ['千载谁堪伯仲间', '千'],
+                ['千呼万唤始出来', '千'],
+                ['千金散尽还复来', '千'],
+                ['一夫当关万夫莫开', '一'],
+                ['一顾倾人城再顾倾人国', '一'],
+                ['七八个星天外两三点雨山前', '七'],
+                ['七八个星天外', '七'],
+                ['两个黄鹂鸣翠柳', '两'],
+            ];
+
+            // 合并所有词汇 (去重)
+            const allWordsMap = new Map();
+            idiomDB.forEach(item => allWordsMap.set(item[0], item[1]));
+            poemDB.forEach(item => { if (!allWordsMap.has(item[0])) allWordsMap.set(item[0], item[
+                    1]); });
+
+            // 数字列表
+            const numbers = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十', '百', '千', '万', '两'];
+
+            // ===== 游戏状态 =====
+            const state = {
+                mode: 'ai', // 'ai' | 'pvp'
+                currentNumber: '一',
+                scores: [0, 0], // [player1, player2/ai]
+                usedWords: new Set(),
+                currentPlayer: 1, // 1 or 2
+                timerSeconds: 20,
+                timerInterval: null,
+                gameActive: false,
+                roundCount: 0,
+            };
+
+            // ===== DOM 元素 =====
+            const $ = (id) => document.getElementById(id);
+            const numberChar = $('numberChar');
+            const turnIndicator = $('turnIndicator');
+            const turnNum = $('turnNum');
+            const wordInput = $('wordInput');
+            const btnSubmit = $('btnSubmit');
+            const btnPass = $('btnPass');
+            const btnReset = $('btnReset');
+            const btnNewNumber = $('btnNewNumber');
+            const timerFill = $('timerFill');
+            const timerText = $('timerText');
+            const messageEl = $('message');
+            const usedList = $('usedList');
+            const usedCount = $('usedCount');
+            const modalOverlay = $('modalOverlay');
+            const modalWinner = $('modalWinner');
+            const modalDetail = $('modalDetail');
+            const btnPlayAgain = $('btnPlayAgain');
+            const scoreVal1 = $('scoreVal1');
+            const scoreVal2 = $('scoreVal2');
+            const scoreName1 = $('scoreName1');
+            const scoreName2 = $('scoreName2');
+            const scoreCol2 = $('scoreCol2');
+
+            // ===== 辅助函数 =====
+            function showMessage(text, type) {
+                messageEl.textContent = text;
+                messageEl.className = 'message ' + type;
+                messageEl.style.display = 'block';
+                clearTimeout(messageEl._timeout);
+                messageEl._timeout = setTimeout(() => {
+                    if (messageEl.textContent === text) messageEl.style.display = 'none';
+                }, 2500);
+            }
+
+            function hideMessage() {
+                messageEl.style.display = 'none';
+                clearTimeout(messageEl._timeout);
+            }
+
+            // ===== 计时器 =====
+            function startTimer() {
+                clearInterval(state.timerInterval);
+                state.timerSeconds = 20;
+                updateTimerUI();
+                state.timerInterval = setInterval(() => {
+                    state.timerSeconds--;
+                    updateTimerUI();
+                    if (state.timerSeconds <= 0) {
+                        clearInterval(state.timerInterval);
+                        handleTimeout();
+                    }
+                }, 1000);
+            }
+
+            function stopTimer() {
+                clearInterval(state.timerInterval);
+                state.timerInterval = null;
+            }
+
+            function updateTimerUI() {
+                const pct = (state.timerSeconds / 20) * 100;
+                timerFill.style.width = pct + '%';
+                timerText.textContent = '剩余 ' + state.timerSeconds + ' 秒';
+                if (state.timerSeconds <= 5) {
+                    timerFill.classList.add('urgent');
+                    timerText.classList.add('urgent');
+                } else {
+                    timerFill.classList.remove('urgent');
+                    timerText.classList.remove('urgent');
+                }
+            }
+
+            // ===== 超时处理 =====
+            function handleTimeout() {
+                if (!state.gameActive) return;
+                const loser = state.currentPlayer;
+                const loserName = getPlayerName(loser);
+                showMessage('⏰ ' + loserName + ' 超时！', 'error');
+                // 判断胜负
+                endRound(loser === 1 ? 2 : 1, '对方超时');
+            }
+
+            function getPlayerName(playerNum) {
+                if (playerNum === 1) return '玩家';
+                return state.mode === 'ai' ? 'AI 对手' : '玩家二';
+            }
+
+            // ===== 检查词汇 =====
+            function isValidWord(word) {
+                if (!word || word.trim().length === 0) return false;
+                word = word.trim();
+                // 检查长度
+                if (word.length < 2 || word.length > 20) return false;
+                // 检查是否包含当前数字
+                if (!word.includes(state.currentNumber)) return false;
+                // 检查是否已被使用
+                if (state.usedWords.has(word)) return false;
+                // 检查是否为纯中文
+                if (!/^[\u4e00-\u9fa5，。！？、；：""''《》（）\s]+$/.test(word)) return false;
+                return true;
+            }
+
+            // ===== 添加已用词汇 =====
+            function addUsedWord(word, playerNum) {
+                state.usedWords.add(word);
+                const tag = document.createElement('span');
+                tag.className = 'used-tag ' + (playerNum === 1 ? 'p1' : (state.mode === 'ai' ? 'ai' : 'p2'));
+                tag.textContent = word;
+                usedList.appendChild(tag);
+                usedCount.textContent = '(' + state.usedWords.size + ')';
+                // 滚动到底部
+                usedList.scrollTop = usedList.scrollHeight;
+            }
+
+            // ===== 回合结束 =====
+            function endRound(winner, reason) {
+                if (!state.gameActive) return;
+                state.gameActive = false;
+                stopTimer();
+                state.scores[winner - 1]++;
+                updateScoreboard();
+                wordInput.disabled = true;
+                btnSubmit.disabled = true;
+
+                const winnerName = getPlayerName(winner);
+                showMessage('🏆 ' + winnerName + ' 赢得此轮！(' + reason + ')', 'success');
+
+                // 检查是否达到10分
+                if (state.scores[winner - 1] >= 10) {
+                    setTimeout(() => showEndGameModal(winner), 1500);
+                } else {
+                    setTimeout(autoStartNewRound, 2000);
+                }
+            }
+
+            function autoStartNewRound() {
+                if (state.scores[0] >= 10 || state.scores[1] >= 10) return;
+                startNewRound();
+            }
+
+            // ===== 新回合 =====
+            function startNewRound() {
+                state.gameActive = true;
+                state.usedWords.clear();
+                usedList.innerHTML = '';
+                usedCount.textContent = '(0)';
+                wordInput.disabled = false;
+                wordInput.value = '';
+                btnSubmit.disabled = false;
+                hideMessage();
+                state.roundCount++;
+
+                // 随机谁先手
+                state.currentPlayer = Math.random() < 0.5 ? 1 : 2;
+
+                updateTurnUI();
+                wordInput.focus();
+
+                // 启动计时器
+                startTimer();
+
+                // AI先手
+                if (state.mode === 'ai' && state.currentPlayer === 2) {
+                    wordInput.disabled = true;
+                    btnSubmit.disabled = true;
+                    setTimeout(aiPlay, 800 + Math.random() * 1500);
+                } else {
+                    wordInput.disabled = false;
+                    btnSubmit.disabled = false;
+                }
+            }
+
+            function updateTurnUI() {
+                const name = getPlayerName(state.currentPlayer);
+                turnNum.textContent = state.currentNumber;
+                turnIndicator.textContent = name + '回合 — 请输入含 "' + state.currentNumber + '" 的成语或诗句';
+                turnIndicator.className = 'turn-indicator ' + (state.currentPlayer === 1 ? 'player1-turn' :
+                    'player2-turn');
+            }
+
+            function updateScoreboard() {
+                scoreVal1.textContent = state.scores[0];
+                scoreVal2.textContent = state.scores[1];
+                if (state.mode === 'ai') {
+                    scoreName1.textContent = '🟡 玩家';
+                    scoreName2.textContent = '🤖 AI';
+                    scoreCol2.className = 'score-col ai';
+                } else {
+                    scoreName1.textContent = '🔴 玩家一';
+                    scoreName2.textContent = '🔵 玩家二';
+                    scoreCol2.className = 'score-col player2';
+                }
+            }
+
+            // ===== 切换玩家 =====
+            function switchPlayer() {
+                state.currentPlayer = state.currentPlayer === 1 ? 2 : 1;
+                updateTurnUI();
+                startTimer();
+
+                if (state.mode === 'ai' && state.currentPlayer === 2) {
+                    wordInput.disabled = true;
+                    btnSubmit.disabled = true;
+                    setTimeout(aiPlay, 600 + Math.random() * 1200);
+                } else {
+                    wordInput.disabled = false;
+                    btnSubmit.disabled = false;
+                    wordInput.focus();
+                }
+            }
+
+            // ===== 玩家提交 =====
+            function playerSubmit() {
+                if (!state.gameActive) return;
+                if (state.mode === 'ai' && state.currentPlayer === 2) return;
+
+                const word = wordInput.value.trim();
+                if (!isValidWord(word)) {
+                    if (!word) {
+                        showMessage('请输入成语或诗句', 'error');
+                    } else if (!word.includes(state.currentNumber)) {
+                        showMessage('词汇中必须包含数字 "' + state.currentNumber + '"', 'error');
+                    } else if (state.usedWords.has(word)) {
+                        showMessage('此词汇已被使用过', 'error');
+                    } else {
+                        showMessage('请输入有效的中文词汇（2-20字）', 'error');
+                    }
+                    wordInput.focus();
+                    return;
+                }
+
+                stopTimer();
+                hideMessage();
+                addUsedWord(word, state.currentPlayer);
+                wordInput.value = '';
+                showMessage('✅ ' + getPlayerName(state.currentPlayer) + ' 说出了 "' + word + '"', 'success');
+                switchPlayer();
+            }
+
+            // ===== AI 出词 =====
+            function aiPlay() {
+                if (!state.gameActive) return;
+                if (state.currentPlayer !== 2) return;
+
+                // 查找可用的词汇
+                const available = [];
+                allWordsMap.forEach((num, word) => {
+                    if (num === state.currentNumber && !state.usedWords.has(word)) {
+                        available.push(word);
+                    }
+                });
+
+                if (available.length === 0) {
+                    // AI无法回答，玩家胜
+                    stopTimer();
+                    showMessage('🤖 AI 想不出更多词汇了！', 'info');
+                    endRound(1, 'AI词穷');
+                    return;
+                }
+
+                // 随机选一个
+                const chosen = available[Math.floor(Math.random() * available.length)];
+                addUsedWord(chosen, 2);
+                showMessage('🤖 AI 说出了 "' + chosen + '"', 'info');
+                setTimeout(() => {
+                    if (state.gameActive) switchPlayer();
+                }, 500);
+            }
+
+            // ===== 结束游戏弹窗 =====
+            function showEndGameModal(winner) {
+                state.gameActive = false;
+                stopTimer();
+                wordInput.disabled = true;
+                btnSubmit.disabled = true;
+
+                const name = getPlayerName(winner);
+                modalWinner.textContent = '🏆 ' + name + ' 获胜！';
+                modalDetail.textContent = '最终比分 ' + state.scores[0] + ' : ' + state.scores[1] +
+                    ' （共 ' + state.roundCount + ' 轮）';
+                modalOverlay.style.display = 'flex';
+            }
+
+            function hideModal() {
+                modalOverlay.style.display = 'none';
+            }
+
+            // ===== 更换数字 =====
+            function changeNumber() {
+                stopTimer();
+                let newNum;
+                do {
+                    newNum = numbers[Math.floor(Math.random() * numbers.length)];
+                } while (newNum === state.currentNumber && numbers.length > 1);
+
+                state.currentNumber = newNum;
+                numberChar.textContent = newNum;
+                state.usedWords.clear();
+                usedList.innerHTML = '';
+                usedCount.textContent = '(0)';
+                wordInput.value = '';
+                hideMessage();
+
+                startNewRound();
+                showMessage('🎲 令数更换为 "' + newNum + '"', 'info');
+            }
+
+            // ===== 重置游戏 =====
+            function resetGame() {
+                stopTimer();
+                state.scores = [0, 0];
+                state.usedWords.clear();
+                state.roundCount = 0;
+                state.gameActive = false;
+                usedList.innerHTML = '';
+                usedCount.textContent = '(0)';
+                wordInput.value = '';
+                wordInput.disabled = false;
+                btnSubmit.disabled = false;
+                hideMessage();
+                hideModal();
+                updateScoreboard();
+
+                // 随机选一个新数字
+                state.currentNumber = numbers[Math.floor(Math.random() * numbers.length)];
+                numberChar.textContent = state.currentNumber;
+                turnNum.textContent = state.currentNumber;
+
+                startNewRound();
+            }
+
+            // ===== 切换模式 =====
+            function switchMode(mode) {
+                if (state.gameActive && state.roundCount > 0) {
+                    if (!confirm('切换模式将重置游戏，确定吗？')) return;
+                }
+                state.mode = mode;
+                document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+                document.querySelector('[data-mode="' + mode + '"]').classList.add('active');
+                resetGame();
+            }
+
+            // ===== 事件绑定 =====
+            btnSubmit.addEventListener('click', playerSubmit);
+            wordInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') playerSubmit();
+            });
+            btnReset.addEventListener('click', resetGame);
+            btnNewNumber.addEventListener('click', changeNumber);
+            btnPlayAgain.addEventListener('click', () => { hideModal();
+                resetGame(); });
+            modalOverlay.addEventListener('click', (e) => {
+                if (e.target === modalOverlay) hideModal();
+            });
+
+            document.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.addEventListener('click', () => switchMode(btn.dataset.mode));
+            });
+
+            // 已用词汇折叠
+            $('usedToggle').addEventListener('click', () => {
+                const list = $('usedList');
+                if (list.style.display === 'none') {
+                    list.style.display = 'flex';
+                } else {
+                    list.style.display = 'none';
+                }
+            });
+
+            // ===== 初始化 =====
+            function init() {
+                state.currentNumber = numbers[Math.floor(Math.random() * numbers.length)];
+                numberChar.textContent = state.currentNumber;
+                turnNum.textContent = state.currentNumber;
+                updateScoreboard();
+                state.mode = 'ai';
+                document.querySelector('[data-mode="ai"]').classList.add('active');
+                startNewRound();
+            }
+
+            init();
+            console.log('🌸 数字飞花令已就绪！');
+            console.log('数据库共加载 ' + allWordsMap.size + ' 条词汇');
+            console.log('支持的数字：' + numbers.join('、'));
+        })();
+    </script>
+</body>
+</html>
