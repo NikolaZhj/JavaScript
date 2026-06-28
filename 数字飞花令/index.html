@@ -17,6 +17,11 @@
         .input-bar input::placeholder{color:rgba(140,120,80,0.5);font-size:8px;}
         .input-bar button{padding:8px 14px;border:3px solid #5c4033;background:#3a2a14;color:#ffe0a0;cursor:pointer;font-family:'Press Start 2P',monospace;font-size:9px;white-space:nowrap;box-shadow:0 4px 0 #2a1a0a;position:relative;top:0;}
         .input-bar button:active{top:4px;box-shadow:none;}
+        .mic-btn{background:#0a2a14!important;border-color:#306030!important;color:#80e8a0!important;font-size:14px!important;padding:8px 10px!important;}
+        .mic-btn.recording{background:#2a0a0a!important;border-color:#803030!important;color:#f08080!important;animation:micPulse 0.8s infinite;}
+        @keyframes micPulse{0%,100%{box-shadow:0 4px 0 #2a1a0a,0 0 0 #f04040;}50%{box-shadow:0 4px 0 #2a1a0a,0 0 12px #f04040;}}
+        .mic-btn:disabled{opacity:0.4;cursor:not-allowed;}
+
         .bottom-btns{display:flex;gap:8px;margin-top:8px;}
         .bottom-btns button{padding:6px 12px;border:2px solid #3a2a1a;background:#0d0d1a;color:#8a7a5a;cursor:pointer;font-family:'Press Start 2P',monospace;font-size:7px;box-shadow:0 3px 0 #1a1a0a;position:relative;top:0;}
         .bottom-btns button:active{top:3px;box-shadow:none;}
@@ -66,7 +71,7 @@
             </div>
             <div class="help-section">
                 <div class="help-h">🎮 按钮与快捷键</div>
-                <div class="help-p">H 键 — 打开/关闭本帮助<br>Esc — 关闭帮助<br>🎲 换令数 — 更换当前令数<br>💡 提示 — 自动帮你说一句<br>🔄 重新开始 — 重置全部进度<br>👥 双人对战 — 切换到PvP模式</div>
+                <div class="help-p">H 键 — 打开/关闭本帮助<br>Esc — 关闭帮助<br>🎲 换令数 — 更换当前令数<br>🎤 语音 — 点击后说话，自动出招<br>💡 提示 — 自动帮你说一句<br>🔄 重新开始 — 重置全部进度<br>👥 双人对战 — 切换到PvP模式</div>
             </div>
             <div class="help-close">按 H 或点击背景关闭</div>
         </div>
@@ -74,6 +79,7 @@
     <div class="ui-layer">
         <div class="input-bar" id="inputBar">
             <input type="text" id="wordInput" placeholder="输入含令数的诗句或成语…" maxlength="20" autocomplete="off">
+            <button id="btnMic" class="mic-btn" title="语音输入">🎤</button>
             <button id="btnSubmit">⚔ 出招</button>
         </div>
         <div class="bottom-btns" id="bottomBtns">
@@ -112,7 +118,7 @@
         for(let i=0;i<40;i++)state.flowers.push({x:Math.random()*MAP_W,y:0,color:i%3===0?'#e8a0a0':(i%3===1?'#f0e8a0':'#a0d0f0'),size:2+Math.floor(Math.random()*3),phase:Math.random()*Math.PI*2});
 
         // DOM
-        const $=id=>document.getElementById(id),wordInput=$('wordInput'),btnSubmit=$('btnSubmit'),inputBar=$('inputBar'),hintBar=$('hintBar'),bossInfo=$('bossInfo'),bossInfoText=$('bossInfoText'),helpOverlay=$('helpOverlay');
+        const $=id=>document.getElementById(id),wordInput=$('wordInput'),btnMic=$('btnMic'),btnSubmit=$('btnSubmit'),inputBar=$('inputBar'),hintBar=$('hintBar'),bossInfo=$('bossInfo'),bossInfoText=$('bossInfoText'),helpOverlay=$('helpOverlay');
         function showMsg(text){const el=document.createElement('div');el.className='floating-msg';el.textContent=text;document.body.appendChild(el);el.addEventListener('animationend',()=>el.remove());}
         function getPlayerName(p){if(state.mode==='pvp')return p===1?'玩家一':'玩家二';return p===1?'我':(state.currentBoss?state.currentBoss.name:'对手');}
         function toggleHelp(){helpOverlay.classList.toggle('show');}
@@ -253,10 +259,10 @@
 
         // ============ 对战 ============
         function startBattle(boss){if(state.mode==='battle'||state.mode==='pvp')return;state.mode='battle';state.currentBoss=boss;state.gameActive=false;state.hp=[100,boss.maxHp];state.usedWords.clear();state.bubbles.length=0;state.matchWins=[0,0];state.currentNumber=numbers[Math.floor(Math.random()*numbers.length)];sfxEncounter();bossInfoText.textContent=boss.emoji+' '+boss.title+' '+boss.name+' 向你发起飞花令挑战！';bossInfo.classList.add('show');setTimeout(()=>bossInfo.classList.remove('show'),2500);inputBar.classList.add('active');hintBar.style.display='none';wordInput.placeholder='输入含令数的诗句或成语…';showMsg('⚔ '+boss.name+' 邀你对诗！');setTimeout(()=>startBattleRound(),2000);}
-        function endBattle(winner){if(state.mode==='pvp'){resetToExplore();return;}state.mode='explore';const b=state.currentBoss;state.currentBoss=null;state.gameActive=false;stopBattleTimer();state.bubbles.length=0;inputBar.classList.remove('active');hintBar.style.display='block';wordInput.disabled=true;btnSubmit.disabled=true;wordInput.value='';if(winner===1&&b){b.defeated=true;b.hp=0;state.defeatedCount++;showMsg('🎉 击败 '+b.name+'！获得诗卷！');setTimeout(()=>{if(state.defeatedCount>=4){showMsg('🏆 恭喜！所有诗人已被你的才华折服！');spawnParticles(W/2,H/2,60,C.goldL,[4,14],['🏆','诗','仙','！','✨']);}},1500);}}
-        function resetToExplore(){state.mode='explore';state.currentBoss=null;state.gameActive=false;stopBattleTimer();state.bubbles.length=0;state.hp=[100,100];state.usedWords.clear();inputBar.classList.remove('active');hintBar.style.display='block';wordInput.disabled=true;btnSubmit.disabled=true;wordInput.value='';document.querySelectorAll('.mode-indicator button').forEach(b=>b.classList.remove('active'));document.querySelector('[data-mode="explore"]').classList.add('active');}
-        function startBattleRound(){state.gameActive=true;state.usedWords.clear();state.bubbles.length=0;wordInput.disabled=false;wordInput.value='';btnSubmit.disabled=false;state.currentPlayer=Math.random()<0.5?1:2;wordInput.focus();startBattleTimer();if(state.currentPlayer===2&&state.mode==='battle'){wordInput.disabled=true;btnSubmit.disabled=true;setTimeout(bossPlay,800+Math.random()*1000);}}
-        function switchPlayer(){state.currentPlayer=state.currentPlayer===1?2:1;startBattleTimer();if(state.currentPlayer===2&&state.mode==='battle'){wordInput.disabled=true;btnSubmit.disabled=true;setTimeout(bossPlay,500+Math.random()*800);}else{wordInput.disabled=false;btnSubmit.disabled=false;wordInput.focus();}}
+        function endBattle(winner){if(state.mode==='pvp'){resetToExplore();return;}state.mode='explore';const b=state.currentBoss;state.currentBoss=null;state.gameActive=false;stopBattleTimer();state.bubbles.length=0;inputBar.classList.remove('active');hintBar.style.display='block';wordInput.disabled=true;btnMic.disabled=btnSubmit.disabled=true;wordInput.value='';if(winner===1&&b){b.defeated=true;b.hp=0;state.defeatedCount++;showMsg('🎉 击败 '+b.name+'！获得诗卷！');setTimeout(()=>{if(state.defeatedCount>=4){showMsg('🏆 恭喜！所有诗人已被你的才华折服！');spawnParticles(W/2,H/2,60,C.goldL,[4,14],['🏆','诗','仙','！','✨']);}},1500);}}
+        function resetToExplore(){state.mode='explore';state.currentBoss=null;state.gameActive=false;stopBattleTimer();state.bubbles.length=0;state.hp=[100,100];state.usedWords.clear();inputBar.classList.remove('active');hintBar.style.display='block';wordInput.disabled=true;btnMic.disabled=btnSubmit.disabled=true;wordInput.value='';document.querySelectorAll('.mode-indicator button').forEach(b=>b.classList.remove('active'));document.querySelector('[data-mode="explore"]').classList.add('active');}
+        function startBattleRound(){state.gameActive=true;state.usedWords.clear();state.bubbles.length=0;wordInput.disabled=false;wordInput.value='';btnMic.disabled=btnSubmit.disabled=false;state.currentPlayer=Math.random()<0.5?1:2;if(state.mode==='pvp')wordInput.placeholder='玩家'+(state.currentPlayer===1?'一':'二')+' 输入…';wordInput.focus();startBattleTimer();if(state.currentPlayer===2&&state.mode==='battle'){wordInput.disabled=true;btnMic.disabled=btnSubmit.disabled=true;setTimeout(bossPlay,800+Math.random()*1000);}}
+        function switchPlayer(){state.currentPlayer=state.currentPlayer===1?2:1;if(state.mode==='pvp')wordInput.placeholder='玩家'+(state.currentPlayer===1?'一':'二')+' 输入…';startBattleTimer();if(state.currentPlayer===2&&state.mode==='battle'){wordInput.disabled=true;btnMic.disabled=btnSubmit.disabled=true;setTimeout(bossPlay,500+Math.random()*800);}else{wordInput.disabled=false;btnMic.disabled=btnSubmit.disabled=false;wordInput.focus();}}
         function bossPlay(){if(!state.gameActive||state.mode!=='battle')return;if(state.currentPlayer!==2)return;const available=[];allWordsMap.forEach((num,word)=>{if(num===state.currentNumber&&!state.usedWords.has(word))available.push(word);});if(available.length===0){stopBattleTimer();showMsg('🤖 '+state.currentBoss.name+' 词穷！');endBattleRound(1);return;}const chosen=available[Math.floor(Math.random()*available.length)];state.usedWords.add(chosen);addBubble(chosen,2,W*0.78,H*0.72-80);state.hp[0]=Math.max(0,state.hp[0]-(state.currentBoss?state.currentBoss.dmg:8));sfxAttack();setTimeout(()=>sfxHit(),150);spawnParticles(W*0.18,H*0.60,12,C.purpleL,[3,6],chosen.split(''));if(state.hp[0]<=0){sfxVictory();endBattleRound(2);}else{setTimeout(()=>{if(state.gameActive)switchPlayer();},800);}}
         function playerSubmit(){
             if(!state.gameActive||(state.mode!=='battle'&&state.mode!=='pvp'))return;if(state.currentPlayer===2&&state.mode==='battle')return;
@@ -267,7 +273,7 @@
             if(state.hp[target-1]<=0){sfxVictory();endBattleRound(state.currentPlayer);}else{setTimeout(()=>switchPlayer(),800);}
         }
         function endBattleRound(winner){
-            if(!state.gameActive)return;state.gameActive=false;stopBattleTimer();state.matchWins[winner-1]++;wordInput.disabled=true;btnSubmit.disabled=true;state.shakeAmt=6;state.shakeDur=0.35;spawnParticles(W/2,H/2,25,C.gold,[3,10],['胜','利','✨']);showMsg('🏆 '+getPlayerName(winner)+' 胜！');
+            if(!state.gameActive)return;state.gameActive=false;stopBattleTimer();state.matchWins[winner-1]++;wordInput.disabled=true;btnMic.disabled=btnSubmit.disabled=true;state.shakeAmt=6;state.shakeDur=0.35;spawnParticles(W/2,H/2,25,C.gold,[3,10],['胜','利','✨']);showMsg('🏆 '+getPlayerName(winner)+' 胜！');
             if(state.matchWins[winner-1]>=2){state.totalWins[winner-1]++;state.totalGames++;setTimeout(()=>{showMsg('🎉 '+getPlayerName(winner)+' 最终获胜！');spawnParticles(W/2,H/2,40,C.goldL,[5,14],['🏆','胜','✨','🎉']);setTimeout(()=>endBattle(winner),2000);},1500);}else{setTimeout(()=>{state.hp[0]=state.hp[0]>0?state.hp[0]:100;startBattleRound();},1500);}
         }
         function startBattleTimer(){clearInterval(state.timerInterval);state.timerSeconds=20;state.timerInterval=setInterval(()=>{state.timerSeconds--;if(state.timerSeconds<=0){clearInterval(state.timerInterval);handleBattleTimeout();}},1000);}
@@ -284,15 +290,60 @@
         });window.addEventListener('keyup',e=>{state.keys[e.code]=false;});
         helpOverlay.addEventListener('click',function(e){if(e.target===this)this.classList.remove('show');});
         btnSubmit.addEventListener('click',playerSubmit);wordInput.addEventListener('keydown',e=>{if(e.key==='Enter')playerSubmit();});
-        $('btnReset').addEventListener('click',()=>{if(state.mode==='pvp'||state.mode==='battle')resetToExplore();state.playerX=100;state.cameraX=0;bosses.forEach(b=>{b.defeated=false;b.hp=b.maxHp;});state.defeatedCount=0;state.bubbles.length=0;state.particles.length=0;state.gameActive=false;stopBattleTimer();inputBar.classList.remove('active');hintBar.style.display='block';wordInput.disabled=true;btnSubmit.disabled=true;showMsg('🔄 重新开始！');});
+        $('btnReset').addEventListener('click',()=>{if(state.mode==='pvp'||state.mode==='battle')resetToExplore();state.playerX=100;state.cameraX=0;bosses.forEach(b=>{b.defeated=false;b.hp=b.maxHp;});state.defeatedCount=0;state.bubbles.length=0;state.particles.length=0;state.gameActive=false;stopBattleTimer();inputBar.classList.remove('active');hintBar.style.display='block';wordInput.disabled=true;btnMic.disabled=btnSubmit.disabled=true;showMsg('🔄 重新开始！');});
         $('btnCheat').addEventListener('click',()=>{if((state.mode!=='battle'&&state.mode!=='pvp')||!state.gameActive)return;if(state.mode==='pvp'){showMsg('💡 双人模式不能提示！');return;}if(state.currentPlayer!==1){showMsg('⏳ 请等待你的回合');return;}const available=[];allWordsMap.forEach((num,word)=>{if(num===state.currentNumber&&!state.usedWords.has(word))available.push(word);});if(available.length===0){showMsg('💡 没有可用的词汇了！');return;}const chosen=available[Math.floor(Math.random()*available.length)];wordInput.value=chosen;playerSubmit();});
         $('btnNewNumber').addEventListener('click',()=>{if(state.mode!=='battle'&&state.mode!=='pvp')return;stopBattleTimer();let nn;do{nn=numbers[Math.floor(Math.random()*numbers.length)];}while(nn===state.currentNumber&&numbers.length>1);state.currentNumber=nn;state.usedWords.clear();state.bubbles.length=0;wordInput.value='';startBattleRound();showMsg('🎲 令数 -> '+nn);});
         document.querySelectorAll('.mode-indicator button').forEach(btn=>{btn.addEventListener('click',()=>{const mode=btn.dataset.mode;if(mode===state.mode)return;if(mode==='pvp'){if(!confirm('切换到双人对战模式？'))return;document.querySelectorAll('.mode-indicator button').forEach(b=>b.classList.remove('active'));btn.classList.add('active');resetToExplore();startPvP();}else{if(state.mode==='pvp'||state.mode==='battle')resetToExplore();document.querySelectorAll('.mode-indicator button').forEach(b=>b.classList.remove('active'));btn.classList.add('active');state.playerX=100;state.cameraX=0;bosses.forEach(b=>{b.defeated=false;b.hp=b.maxHp;});state.defeatedCount=0;}});});
         document.addEventListener('touchmove',e=>{if(e.target.tagName!=='INPUT')e.preventDefault();},{passive:false});document.addEventListener('click',initAudio,{once:true});
 
+
+        // ============ 语音识别（Web Speech API） ============
+        let recognition=null,speechActive=false;
+        function initSpeech(){
+            if(recognition)return true;
+            const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+            if(!SR){showMsg('⚠ 浏览器不支持语音识别，请使用Chrome');return false;}
+            recognition=new SR();
+            recognition.lang='zh-CN';
+            recognition.interimResults=false;
+            recognition.maxAlternatives=1;
+            recognition.onresult=(e)=>{
+                const raw=e.results[0][0].transcript.trim();
+                let word=raw.replace(/[，。！？、；：""''《》（）\s]/g,'').replace(/\s+/g,'');
+                const numMap={'0':'零','1':'一','2':'二','3':'三','4':'四','5':'五','6':'六','7':'七','8':'八','9':'九','10':'十','100':'百','1000':'千','10000':'万'};
+                word=word.replace(/\d/g,m=>numMap[m]||m);
+                if(word){
+                    wordInput.value=word;
+                    showMsg('🎤 识别: '+word);
+                    setTimeout(()=>{
+                        if(state.gameActive&&wordInput.value===word)playerSubmit();
+                    },300);
+                }
+                stopSpeech();
+            };
+            recognition.onerror=(e)=>{
+                if(e.error==='not-allowed')showMsg('⚠ 请允许麦克风权限');
+                else if(e.error!=='aborted'&&e.error!=='no-speech')showMsg('⚠ 语音识别失败，请重试');
+                stopSpeech();
+            };
+            recognition.onend=()=>stopSpeech();
+            return true;
+        }
+        function startSpeech(){
+            if(!state.gameActive||(state.mode!=='battle'&&state.mode!=='pvp'))return;
+            if(state.currentPlayer===2&&state.mode==='battle')return;
+            if(!initSpeech())return;
+            if(speechActive)return;
+            speechActive=true;btnMic.classList.add('recording');
+            showMsg('🎤 请说出诗句或成语...');
+            try{recognition.start();}catch(e){stopSpeech();}
+        }
+        function stopSpeech(){speechActive=false;btnMic.classList.remove('recording');try{recognition.stop();}catch(e){}}
+        btnMic.addEventListener('click',()=>{initAudio();if(speechActive)stopSpeech();else startSpeech();});
+
         // ============ 游戏循环 ============
         let lastTime=0;function loop(ts){const dt=Math.min(0.1,(ts-lastTime)/1000);lastTime=ts;if(state.mode==='explore')updateExplore(dt);updateParticles(dt);updateBubbles(dt);draw(dt);requestAnimationFrame(loop);}
-        state.playerX=150;state.cameraX=0;state.mode='explore';wordInput.disabled=true;btnSubmit.disabled=true;inputBar.classList.remove('active');hintBar.style.display='block';lastTime=performance.now();requestAnimationFrame(loop);
+        state.playerX=150;state.cameraX=0;state.mode='explore';wordInput.disabled=true;btnMic.disabled=btnSubmit.disabled=true;inputBar.classList.remove('active');hintBar.style.display='block';lastTime=performance.now();requestAnimationFrame(loop);
         // 首次启动自动显示帮助
         setTimeout(()=>helpOverlay.classList.add('show'),600);
         console.log('🏔 游山玩水觅诗仙 — 数字飞花令已就绪！共加载 '+allWordsMap.size+' 条词汇');
